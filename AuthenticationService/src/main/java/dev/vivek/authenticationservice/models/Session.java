@@ -1,21 +1,23 @@
 package dev.vivek.authenticationservice.models;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.context.annotation.Lazy;
 
+import java.util.Date;
+
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 public class Session extends BaseModel{
     private String token;
-    @OneToOne
-    @Lazy
+    private Date expiringAt;
+
+    @ManyToOne
     private User user;
+    @Enumerated(EnumType.ORDINAL)
+    private SessionStatus sessionStatus;
 }
