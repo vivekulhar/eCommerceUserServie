@@ -27,14 +27,16 @@ import java.util.Optional;
 
 @Service
 public class AuthService {
-    private PasswordEncoder bCryptPasswordEncoder;
+    private PasswordEncoder passwordEncoder;
     private UserRepository userRepository;
     private SessionRepository sessionRepository;
+
 
     public AuthService(UserRepository userRepository, SessionRepository sessionRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
-        this.bCryptPasswordEncoder = passwordEncoder;
+        this.passwordEncoder = passwordEncoder;
+        //this.bCryptPasswordEncoder = passwordEncoder;
     }
     public ResponseEntity<UserDto> login(String email, String password) throws UserDoesNotExistException{
         Optional<User> userOptional = userRepository.findByEmail(email);
@@ -44,10 +46,15 @@ public class AuthService {
         }
 
         User user = userOptional.get();
-
-        if (!bCryptPasswordEncoder.matches(password, user.getPassword())) {
+        /*if(!password.equals(user.getPassword())){
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }*/
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+//        if (!bCryptPasswordEncoder.matches(password, user.getPassword())) {
+//            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//        }
         //        RandomStringUtils randomStringUtils = new RandomStringUtils();
         // TODO: Update here to use Jwt
         // Payload:
@@ -73,7 +80,7 @@ public class AuthService {
                 .claims(claimsMap)
                 .signWith(key)
                 .compact();
-        //String token = RandomStringUtils.randomAscii(20);
+//        String token = RandomStringUtils.randomAscii(20);
         MultiValueMapAdapter<String, String > headers = new MultiValueMapAdapter<>(new HashMap<>());
         headers.add("AUTH_TOKEN", token);
 
@@ -120,31 +127,33 @@ public class AuthService {
 
         User user = new User();
         user.setEmail(email);
-        user.setPassword(bCryptPasswordEncoder.encode(password));
+        user.setPassword(passwordEncoder.encode(password));
+        //user.setPassword(password);
         user.setRoles(new HashSet<>());
         User savedUser = userRepository.save(user);
 
         return UserDto.from(savedUser);
     }
 
-    public SessionStatus validate(String token, Long userId) {
+    public Optional<UserDto> validate(String token, Long userId) {
         Optional<Session> sessionOptional = sessionRepository.findByTokenAndUser_Id(token, userId);
 
         if (sessionOptional.isEmpty()) {
-            return SessionStatus.INVALID;
+            return Optional.empty();
         }
 
         Session session = sessionOptional.get();
 
         if (!session.getSessionStatus().equals(SessionStatus.ACTIVE)) {
-            return SessionStatus.EXPIRED;
+            return Optional.empty();
         }
+        User user = userRepository.findById(userId).get();
 
 //        if (!session.getExpiringAt() > new Date()) {
 //            return SessionStatus.EXPIRED;
 //        }
 
-        return SessionStatus.ACTIVE;
+        return Optional.of(UserDto.from(user));
     }
 }
 

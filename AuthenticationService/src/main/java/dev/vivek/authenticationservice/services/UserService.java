@@ -43,7 +43,7 @@ public class UserService {
         }
 
         User user = userOptional.get();
-        Set<Role> userRoles = new HashSet<>(user.getRoles());
+        Set<Role> userRoles = new HashSet<>(roles);
         user.setRoles(userRoles);
 
 
